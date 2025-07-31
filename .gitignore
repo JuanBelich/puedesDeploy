@@ -1,1 +1,7 @@
-build.sh
+venv/
+__pycache__/
+db.sqlite3
+*.db
+venv.rar
+env/
+
