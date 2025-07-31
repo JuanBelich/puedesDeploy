@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load static %}
+{% load groups %}
+
+{% block title %} Perfil de Usuario {% endblock title %}
+
+{% block extra_css %}
+    <!-- Fuente Poppins opcional -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600display=swap" rel="stylesheet">
+    
+    <style>
+        body, .font-poppins { font-family: 'Poppins', sans-serif; }
+        .favorito-img { width: 150px; height: 450px; object-fit: cover; }
+        .transition-transform {
+            transition: transform 0.2s ease-in-out; 
+        }
+        .transition-transform:hover {
+            transform: translateY(-5px);
+        }
+
+        
+        /* ...existing code... */
+@media (max-width: 576px) {
+    /* ...existing code... */
+    /* Libros Favoritos: cada libro ocupa toda la fila en móvil */
+    .row.g-4 > [class^="col-"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+    .favorito-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .card.h-100 {
+        min-height: unset;
+    }
+    .card-body.text-center {
+        padding: 0.75rem;
+    }
+}
+/* ...existing code... */
+    </style>
+{% endblock %}
+
+{% block navbar %}
+    {{ block.super }}
+{% endblock navbar %}
+
+{% block content %}
+<div class="container-fluid min-vh-100 font-poppins bg-light py-5">
+    <br>
+    <br>
+    <br>
+    <br>
+    <div class="row justify-content-center">
+        <!-- Columna izquierda: Perfil -->
+        <div class="col-lg-4 col-md-6 col-12 mb-4">
+            <div class="card shadow text-center">
+                <div class="card-body">
+
+                    
+                    {% if request.user|has_group:"Bibliotecario" %}
+                        <span class="bg-warning text-dark ms-2 border rounded px-2 py-1 ">Perfil de Bibliotecario</span>
+                    {% endif %}
+                                     
+                    <h2 class="fw-bold mb-2">{{ perfil.nombre }} {{ perfil.apellido }}</h2>
+                    
+                   
+                    <ul class="list-group mb-4 text-start">
+                        <li class="list-group-item"><strong>SABERES:</strong> {{ perfil.saber }}</li>
+                        <li class="list-group-item"><strong>Edad:</strong> {{ perfil.edad }}</li>
+                        <li class="list-group-item"><strong>Dirección:</strong> {{ perfil.direccion }}</li>
+                        <li class="list-group-item"><strong>Barrio:</strong> {{ perfil.barrio }}</li>
+                        <li class="list-group-item"><strong>Teléfono:</strong> {{ perfil.telefono }}</li>
+                        <li class="list-group-item"><strong>Email:</strong> {{ user.email }}</li>
+                    </ul>
+                    <a href="{% url 'editar_perfil' %}" class="btn btn-outline-primary btn-sm mb-2">Editar mis datos</a>
+                    {% if request.user|has_group:"Bibliotecario" %}
+                    <!-- Botón para abrir el modal -->
+                    <div class="d-flex align-items-center mb-2 gap-2">
+                        <h5 class="card-title mb-0">Modificar Saberes</h5>
+                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#buscarUsuarioModal">
+                            Buscar usuario
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center mb-2 gap-2">
+                        <h5 class="card-title mb-0">Administrar Generos</h5>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#generosModal">
+                            Administrar géneros
+                        </button>
+                    </div>
+                    
+                    <!-- Modal de administración de géneros -->
+                    <div class="modal fade" id="generosModal" tabindex="-1" aria-labelledby="generosModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="generosModalLabel">Administrar géneros</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <!-- Selector de géneros -->
+                            <form id="genero-form" method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="generoSelect" class="form-label">Selecciona un género:</label>
+                               <select class="form-select" id="generoSelect" name="genero_id" required>
+                                    <option value="" selected disabled>Elige un género</option>
+                                    {% for genero in Generos %}
+                                        <option value="{{ genero.id }}">{{ genero.genero }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="d-flex gap-2 mb-3">
+                                <!-- Botón Editar -->
+                                <button type="button" class="btn btn-success btn-sm" id="editarGeneroBtn" disabled data-bs-toggle="modal" data-bs-target="#editarGeneroModal">
+                                Editar
+                                </button>
+                                <!-- Botón Eliminar -->
+                                <button type="submit" formaction="{% url 'eliminar_genero' 0 %}" class="btn btn-danger btn-sm" id="eliminarGeneroBtn" disabled onclick="return confirm('¿Seguro que deseas eliminar este género?');">
+                                Eliminar
+                                </button>
+                            </div>
+                            </form>
+                            <!-- Formulario para agregar nuevo género -->
+                            <form method="post" action="{% url 'agregar_genero' %}" class="mt-3">
+                                {% csrf_token %}
+                                <div class="input-group">
+                                    <input type="text" name="genero" class="form-control" placeholder="Nuevo género" required>
+                                    <button class="btn btn-primary" type="submit">Guardar nuevo género</button>
+                                </div>
+                            </form>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Modal para editar género -->
+                    <div class="modal fade" id="editarGeneroModal" tabindex="-1" aria-labelledby="editarGeneroModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                        <form method="post" id="editarGeneroForm">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                            <h5 class="modal-title" id="editarGeneroModalLabel">Editar género</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                            <input type="hidden" name="genero_id" id="editGeneroId">
+                            <div class="mb-3">
+                                <label for="editGeneroNombre" class="form-label">Nuevo nombre:</label>
+                                <input type="text" class="form-control" name="nombre" id="editGeneroNombre" required>
+                            </div>
+                            </div>
+                            <div class="modal-footer">
+                            <button type="submit" formaction="" class="btn btn-success">Guardar cambios</button>
+                            </div>
+                        </form>
+                        </div>
+                    </div>
+                    </div>
+                    {% endif %}
+                    {% if request.user|has_group:"Bibliotecario" %}
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#enviarMensajeModal">
+                                Enviar mensajes
+                            </button>
+                        </div>
+                    {% endif %}
+
+
+
+                    <div class="mb-3">
+                        <a href="{% url 'singout' %}" class="btn btn-danger">Cerrar Sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: Favoritos -->
+        <div class="col-lg-8 col-0">
+            <div class="card shadow">
+                <div class=" card-header bg-warning text-black">
+                    <h4 class="mb-0 text-center">Libros Favoritos</h4>
+                </div>
+                <div class="card-body ">
+                    <div class="row g-4 ">
+                        {% for libro in perfil.favoritos.all %}
+                        <div class="col-md-4 col-sm-1 col-1 transform">
+                            <div class="card h-100 transition-transform">
+                                <img src="{{ libro.portada.url }}" alt="Portada de {{ libro.nombre_libro }}" class="card-img-top favorito-img">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ libro.nombre_libro }}</h5>
+                                    <p class="card-text mb-1"><strong>Autor:</strong> {{ libro.autor }}</p>
+                                    <p class="card-text mb-1"><strong>Género:</strong> {{ libro.genero }}</p>
+                                    <p class="card-text mb-2"><strong>Saberes:</strong> {{ libro.valor_saberes }}</p>
+                                    <form action="{% url 'toggle_favorito' libro.id %}" method="post">
+                                        {% csrf_token %}
+                                        {% if libro in request.user.perfil.favoritos.all %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Quitar de favoritos</button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-outline-primary btn-sm">Agregar a favoritos</button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center">
+                            <p>No hay libros favoritos.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal para enviar mensajes -->
+<div class="modal fade" id="enviarMensajeModal" tabindex="-1" aria-labelledby="enviarMensajeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <form method="post" action="{% url 'enviar_mensaje_personalizado' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="enviarMensajeModalLabel">Enviar mensajes a usuarios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="usuarios" class="form-label">Selecciona usuarios (Ctrl+Click para varios):</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="selectAllUsuarios">
+                        <label class="form-check-label" for="selectAllUsuarios">
+                            Seleccionar todos
+                        </label>
+                    </div>
+                    <select name="usuarios" id="usuarios" multiple class="form-select">
+                        {% for usuario in usuarios %}
+                            <option value="{{ usuario.id }}">{{ usuario.username }} ({{ usuario.email }})</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">Si no seleccionas ninguno, el mensaje se enviará a todos.</small>
+                </div>
+                <div class="mb-3">
+                    <label for="correos_extra" class="form-label">Correos adicionales (separados por coma):</label>
+                    <input type="text" name="correos_extra" id="correos_extra" class="form-control" placeholder="ejemplo@mail.com, otro@mail.com">
+                </div>
+                <div class="mb-3">
+                    <label for="mensaje" class="form-label">Mensaje:</label>
+                    <textarea class="form-control" name="mensaje" id="mensaje" rows="4" required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Enviar mensaje</button>
+            </div>
+        </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de búsqueda de usuario para bibliotecario -->
+{% if request.user|has_group:"Bibliotecario" %}
+<div class="modal fade" id="buscarUsuarioModal" tabindex="-1" aria-labelledby="buscarUsuarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="buscarUsuarioModalLabel">Buscar usuario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+            <form method="get" action="{% url 'buscar_usuario' %}">
+                <div class="mb-3">
+                    <label for="nombre" class="form-label">Nombre:</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingrese nombre">
+                </div>
+                <div class="mb-3">
+                    <label for="apellido" class="form-label">Apellido:</label>
+                    <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Ingrese apellido">
+                </div>
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </form>
+            {% if usuarios_encontrados %}
+                <hr>
+                {% for usuario in usuarios_encontrados %}
+                    <p>
+                        <strong>{{ usuario.username }}</strong>
+                        ({{ usuario.perfil.nombre }} {{ usuario.perfil.apellido }})
+                    </p>
+                    <form method="post" action="{% url 'modificar_saber' usuario.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="nuevo_saber_{{ usuario.id }}" class="form-label">Nuevo saldo de saberes:</label>
+                            <input type="number" class="form-control" id="nuevo_saber_{{ usuario.id }}" name="nuevo_saber" value="{{ usuario.perfil.saber }}">
+                        </div>
+                        <button type="submit" class="btn btn-success">Guardar</button>
+                    </form>
+                    <hr>
+                {% endfor %}
+            {% elif busqueda_realizada %}
+                <p class="text-danger">Usuario no encontrado.</p>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
+{% if usuarios_encontrados or busqueda_realizada %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var modal = new bootstrap.Modal(document.getElementById('buscarUsuarioModal'));
+        modal.show();
+    });
+</script>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generoSelect = document.getElementById('generoSelect');
+    const editarBtn = document.getElementById('editarGeneroBtn');
+    const eliminarBtn = document.getElementById('eliminarGeneroBtn');
+    const editGeneroId = document.getElementById('editGeneroId');
+    const editGeneroNombre = document.getElementById('editGeneroNombre');
+    const editarGeneroForm = document.getElementById('editarGeneroForm');
+
+    if (generoSelect) {
+        generoSelect.addEventListener('change', function() {
+            const generoId = generoSelect.value;
+            editarBtn.disabled = !generoId;
+            eliminarBtn.disabled = !generoId;
+            eliminarBtn.setAttribute('formaction', `/eliminar_genero/${generoId}/`);
+        });
+
+        // Cuando se hace click en "Editar", pasa los datos al modal
+        editarBtn.addEventListener('click', function() {
+            const generoId = generoSelect.value;
+            const generoNombre = generoSelect.options[generoSelect.selectedIndex].text;
+            editGeneroId.value = generoId;
+            editGeneroNombre.value = generoNombre;
+            editarGeneroForm.setAttribute('action', `/editar_genero/${generoId}/`);
+        });
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAllUsuarios');
+    const usuariosSelect = document.getElementById('usuarios');
+    if (selectAll && usuariosSelect) {
+        selectAll.addEventListener('change', function() {
+            for (let option of usuariosSelect.options) {
+                option.selected = selectAll.checked;
+            }
+        });
+    }
+});
+</script>
+{% endblock content %}

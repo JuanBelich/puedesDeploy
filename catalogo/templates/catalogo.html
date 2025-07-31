@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    Catalogo de Libros
+{% endblock title %}
+
+{% block content %}
+
+
+{% load groups %}
+{% comment %} Este bloque de código es para el catálogo de libros, donde se muestran los libros disponibles {% endcomment %}
+    <h1 class="titulo-catalogo" >Libros</h1>
+    {% if user|has_group:"Bibliotecario" %}
+        <div class="text-center my-1">
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#agregarLibro">
+            Agregar libro
+          </button>
+        </div>
+    {% endif %}
+    <div class="mb-3 text-center">
+    <a href="{% url 'catalogo' %}" class="btn btn-warning btn-lg {% if not request.GET.genero %}active{% endif %}">Todos</a>
+    {% for genero in Generos %}
+        <a href="{% url 'catalogo' %}?genero={{ genero.id }}" class="btn btn-outline-danger btn-lg {% if request.GET.genero == genero.id|stringformat:'s' %}active{% endif %}">
+            {{ genero.genero }}
+          </a>
+          {% endfor %}
+
+    </div>
+    <ul class="libros-grid mt-1">
+      
+        {% for Libro in Libros %}
+                    
+            <li class="libro-item">
+              {% if Libro.portada.url is not empty %}
+                <div class="libro-imagen">
+                  <img src="{{ Libro.portada.url }}" alt="Portada de {{ Libro.nombre_libro }}">
+                </div>
+              {% else %}
+                <div class="libro-imagen">
+                  <p>No hay imagen disponible</p>
+                </div>
+              {% endif %}
+
+
+                 <!-- Button trigger modal -->
+                <div class="libro-info">
+                 
+                        <h3 class="libro-titulo">{{ Libro.nombre_libro }}</h3>
+                        
+
+                    <p class="libro-autor">{{ Libro.autor }}</p>
+                    <p class="libro-genero">Género: {{ Libro.genero }}</p>
+                    <p class="libro-valor">{{ Libro.valor_saberes }} saberes</p>
+                    
+                    {% if user.is_authenticated %}
+                      <form action="{% url 'toggle_favorito' Libro.id %}" method="post">
+                        {% csrf_token %}
+                        {% if Libro in request.user.perfil.favoritos.all %}
+                        <button type="submit">Quitar de favoritos</button>
+                        {% else %}
+                        <button type="submit">Agregar a favoritos</button>
+                        {% endif %}
+                      </form>
+                    {% endif %}
+                    
+                </div>
+
+                <div class="tag-btn">
+                  {% if user|has_group:"Bibliotecario"%}
+                    <a href="{% url 'editar_libro' Libro.id %}"><button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target=""> Editar libro </button></a>
+                    <a href="{% url 'eliminar_libro' Libro.id %}"><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target=""> Eliminar libro </button></a>
+                  {% endif %}
+                </div>
+            </li>
+            {% empty %}
+                <li class="libro-item">
+                    <p>No hay libros cargados en el catálogo.</p>
+                </li>
+            {% endfor %}
+    </ul>
+
+
+   
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="agregarLibro" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h1 class="modal-title">Alta de libro</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+               <form class="form-control" id="libroForm" method="post" action="{% url 'agregar_libro' %}" enctype="multipart/form-data">
+                      {% csrf_token %}
+                      <!-- Campos del formulario para los datos del libro -->
+                      <div class="modal-body">
+                        <div class="row">
+                          <div class="col-md-6">
+                            <div class="form-group">
+                              {{formulario.as_p}}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+              
+                      <!-- ...campos de texto, archivo, select, etc... -->
+                      <div class="modal-footer">
+                      <button type="reset" class="btn btn-secondary" data-bs-dismiss="modal">
+                          <i class="fas fa-times"></i> Cancelar
+                      </button>
+
+                      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Libro</button>
+                      </div>
+                </form>
+                
+            
+            </div>
+        </div>
+        </div>
+        
+    </div>
+
+{% endblock %}
