@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # SECRET_KEY = 'django-insecure-g)oubspbdqg#f!jogpjs59_o#(+b$p1qy8+)6)o$3rt8v=z7#$'
-SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-g)oubspbdqg#f!jogpjs59_o#(+b$p1qy8+)6)o$3rt8v=z7#$')
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -82,12 +83,12 @@ WSGI_APPLICATION = 'puedes.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'b0tsgk9gzpwtr35cxagn',
-        'USER': 'uva77tnfxvpdb4jxtqmm',
-        'PASSWORD': '0RhfJQ2qsgHqLNor7qWGs3w55BoFRf',
-        'HOST': 'b0tsgk9gzpwtr35cxagn-postgresql.services.clever-cloud.com',
-        'PORT': '50013',
+        'ENGINE':'django.db.backends.postgresql',
+        'NAME': config('DB_NAME', default='b0tsgk9gzpwtr35cxagn'),
+        'USER': config('DB_USER', default='uva77tnfxvpdb4jxtqmm'),
+        'PASSWORD': config('DB_PASSWORD', default='0RhfJQ2qsgHqLNor7qWGs3w55BoFRf'),
+        'HOST': config('DB_HOST', default='b0tsgk9gzpwtr35cxagn-postgresql.services.clever-cloud.com'),
+        'PORT': config('DB_PORT', default='50013'),
     }
 }
 
@@ -133,10 +134,37 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+# STATIC_URL = 'static/'
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",
+# ]
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent # Esto apunta a PUEDES-V0.1/
+
+
 STATIC_URL = 'static/'
+
+# Aquí le dices a Django dónde buscar archivos estáticos adicionales
+# que NO estén dentro de las carpetas 'static' de tus apps.
+# En tu caso, si tienes una carpeta 'static' directamente bajo PUEDES-V0.1/
+# (al mismo nivel que 'manage.py'), esta línea es correcta.
+# Si no tienes esa carpeta 'static' en la raíz (y parece que no según tu imagen),
+# entonces esta línea podría ser la causa del warning si no hay archivos allí.
+# Sin embargo, es una buena práctica dejarla por si la usas en el futuro.
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    os.path.join(BASE_DIR, 'static'),
 ]
+
+# Esta es la carpeta a la que 'collectstatic' copiará TODOS los archivos estáticos
+# (de tus apps y de STATICFILES_DIRS) para servirlos en producción.
+# DEBE ser una ruta absoluta y escribible.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+
+# Media files (para archivos subidos por los usuarios)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # Esto apunta a PUEDES-V0.1/media/
+
 
 if not DEBUG:
     # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
